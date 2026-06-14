@@ -31,7 +31,11 @@ class Supplier(TimeStampedModel):
         return self.name
     
 class Warehouse(TimeStampedModel):
+<<<<<<< HEAD
     name = models.CharField(max_length=100)
+=======
+    name = models.CharField(max_length=100,unique=True)
+>>>>>>> 1a04848a402c2b29ad1474ae5eff339f33e38333
     location = models.CharField(max_length=255, blank=True)
     
     class Meta:
