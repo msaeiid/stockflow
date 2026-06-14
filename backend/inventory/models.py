@@ -21,7 +21,7 @@ class Category(TimeStampedModel):
 class Supplier(TimeStampedModel):
     name = models.CharField(max_length=150)
     email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=20, blank=True)
+    phone = models.CharField(max_length=30, blank=True)
     address = models.TextField(blank=True)
     
     class Meta:
@@ -31,7 +31,7 @@ class Supplier(TimeStampedModel):
         return self.name
     
 class Warehouse(TimeStampedModel):
-    name = models.CharField(max_length=100,unique=True)
+    name = models.CharField(max_length=100)
     location = models.CharField(max_length=255, blank=True)
     
     class Meta:
