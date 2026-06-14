@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product,Supplier,Warehouse
+from .models import Category, Product,Supplier,Warehouse, Stock, StockMovement
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -11,3 +11,12 @@ class ProductAdmin(admin.ModelAdmin):
 admin.site.register(Category)
 admin.site.register(Supplier)
 admin.site.register(Warehouse)
+
+
+
+@admin.register(StockMovement)
+class StockMovementAdmin(admin.ModelAdmin):
+    list_display = ("product", "warehouse", "movement_type", "quantity", "created_at")
+    list_filter = ("movement_type", "warehouse")
+    
+admin.site.register(Stock)
