@@ -100,7 +100,7 @@ class StockMovement(TimeStampedModel):
         max_length=3, choices=MovementType.choices
     )
     quantity = models.PositiveIntegerField()
-    notes = models.CharField(max_length=255, blank=True)
+    note = models.CharField(max_length=255, blank=True)
     
     class Meta:
         ordering = ['-created_at'] 
@@ -111,8 +111,7 @@ class StockMovement(TimeStampedModel):
     def clean(self):
         if self.quantity <= 0:
             raise ValidationError("Quantity must be greater than zero.")
-        
-        if self.movement_type == self.movement_type.OUT:
+        if self.movement_type == self.MovementType.OUT:
             stock = Stock.objects.filter(
                 product=self.product, warehouse=self.warehouse
                 ).first()
@@ -128,7 +127,7 @@ class StockMovement(TimeStampedModel):
             stock, _ = Stock.objects.select_for_update().get_or_create(
                 product = self.product, warehouse=self.warehouse
             )
-            if self.movement_type == self.movement_type.IN:
+            if self.movement_type == self.MovementType.IN:
                 stock.quantity += self.quantity
             else:
                 stock.quantity -= self.quantity
