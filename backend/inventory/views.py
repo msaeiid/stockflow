@@ -1,11 +1,16 @@
-from rest_framework import viewsets, filters
-from .models import Category, Supplier, Warehouse, Product, Stock, StockMovement
-from .serializers import (
-    CategorySerializer, SupplierSerializer, WarehouseSerializer,
-    ProductSerializer, StockSerializer, StockMovementSerializer,
-)
-from .permissions import IsManagerOrReadOnly
+from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
+
+from .models import Category, Product, Stock, StockMovement, Supplier, Warehouse
+from .permissions import IsManagerOrReadOnly
+from .serializers import (
+    CategorySerializer,
+    ProductSerializer,
+    StockMovementSerializer,
+    StockSerializer,
+    SupplierSerializer,
+    WarehouseSerializer,
+)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):

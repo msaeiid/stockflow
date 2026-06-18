@@ -9,7 +9,4 @@ class IsManagerOrReadOnly(permissions.BasePermission):
             return False
         if request.method in permissions.SAFE_METHODS:
             return True
-        return (
-            request.user.is_superuser
-            or request.user.groups.filter(name="Manager").exists()
-        )
+        return request.user.is_superuser or request.user.groups.filter(name="Manager").exists()

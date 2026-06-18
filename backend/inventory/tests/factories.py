@@ -1,5 +1,6 @@
 import factory
-from inventory.models import Category, Warehouse, Product
+
+from inventory.models import Category, Product, Warehouse
 
 
 class CategoryFactory(factory.django.DjangoModelFactory):

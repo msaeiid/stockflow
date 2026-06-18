@@ -1,7 +1,6 @@
 import pytest
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group, User
 from rest_framework.test import APIClient
-from .factories import CategoryFactory
 
 pytestmark = pytest.mark.django_db
 
