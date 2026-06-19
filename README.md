@@ -1,5 +1,9 @@
 # StockFlow
 
+![CI](https://github.com/msaeiid/stockflow/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 > A small-business inventory and order management system — track stock, prevent over-selling, and get low-stock alerts.
 
 StockFlow is a full-stack web application that helps small businesses manage
