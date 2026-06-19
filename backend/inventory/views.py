@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -45,6 +46,14 @@ class StockViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = StockSerializer
 
 
+@extend_schema_view(
+    create=extend_schema(
+        summary="Record a stock movement",
+        description="Creates an IN or OUT movement. OUT movements are rejected "
+        "if they exceed available stock.",
+    ),
+    list=extend_schema(summary="List all stock movements"),
+)
 class StockMovementViewSet(viewsets.ModelViewSet):
     queryset = StockMovement.objects.select_related("product", "warehouse").all()
     serializer_class = StockMovementSerializer

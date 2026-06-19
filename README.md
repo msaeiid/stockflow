@@ -23,6 +23,9 @@ inventory, and notifies managers when an item runs low.
 - [ ] Reporting dashboard with charts
 - [ ] REST API documented with Swagger
 
+## API Documentation
+Interactive API docs available at `/api/docs/` (Swagger) and `/api/redoc/` (ReDoc).
+
 ## Tech Stack
 
 **Backend:** Python, Django, Django REST Framework, PostgreSQL, Celery, Redis

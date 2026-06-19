@@ -67,7 +67,12 @@ class StockMovementSerializer(serializers.ModelSerializer):
         model = StockMovement
         fields = ["id", "product", "warehouse", "movement_type", "quantity", "note", "created_at"]
 
-        def validate(self, attrs):
-            instance = StockMovement(**attrs)
+    def validate(self, attrs):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        instance = StockMovement(**attrs)
+        try:
             instance.clean()
-            return attrs
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages) from None
+        return attrs
