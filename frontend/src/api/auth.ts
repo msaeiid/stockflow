@@ -1,5 +1,5 @@
 
-import apiClient from "./clients";
+import apiClient from "./client";
 
 interface TokenResponse {
   access: string;
