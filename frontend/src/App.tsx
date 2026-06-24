@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import ProductsPage from "./pages/ProductsPage";
 import StockPage from "./pages/StockPage";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/stock" element={<StockPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/products" replace />} />

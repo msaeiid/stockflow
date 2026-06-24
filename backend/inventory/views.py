@@ -1,6 +1,10 @@
+from django.db.models import DecimalField, F, Sum
+from django.db.models.functions import Coalesce
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import Category, Product, Stock, StockMovement, Supplier, Warehouse
 from .permissions import IsManagerOrReadOnly
@@ -58,3 +62,37 @@ class StockMovementViewSet(viewsets.ModelViewSet):
     queryset = StockMovement.objects.select_related("product", "warehouse").all()
     serializer_class = StockMovementSerializer
     permission_classes = [IsAuthenticated]
+
+
+class DashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        total_products = Product.objects.filter(is_active=True).count()
+
+        low_stock = [
+            s
+            for s in Stock.objects.select_related("product")
+            if s.quantity <= s.product.reorder_threshold
+        ]
+
+        inventory_value = Stock.objects.aggregate(
+            value=Coalesce(
+                Sum(F("quantity") * F("product__cost_price"), output_field=DecimalField()),
+                0,
+                output_field=DecimalField(),
+            )
+        )["value"]
+
+        top_stock = Stock.objects.select_related("product").order_by("-quantity")[:5]
+
+        return Response(
+            {
+                "total_products": total_products,
+                "low_stock_count": len(low_stock),
+                "inventory_value": inventory_value,
+                "top_products": [
+                    {"name": s.product.name, "quantity": s.quantity} for s in top_stock
+                ],
+            }
+        )

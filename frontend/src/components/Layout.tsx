@@ -18,6 +18,7 @@ function Layout() {
         <strong style={{ marginRight: "auto" }}>StockFlow</strong>
         <Link to="/products">Products</Link>
         <Link to="/stock">Stock</Link>
+        <Link to="/dashboard">Dashboard</Link>
         <button onClick={handleLogout}>Log out</button>
       </nav>
       <main style={{ padding: 24 }}>
