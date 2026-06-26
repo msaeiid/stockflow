@@ -40,9 +40,9 @@ function StockPage() {
   }
 
   return (
-    <div style={{ padding: 24, fontFamily: "system-ui" }}>
+    <div>
       <h2>Stock levels</h2>
-      <table cellPadding={8} style={{ borderCollapse: "collapse", marginBottom: 24 }}>
+      <table className="table stock-table">
         <thead>
           <tr>
             <th align="left">Product</th><th align="left">Warehouse</th>
@@ -51,34 +51,43 @@ function StockPage() {
         </thead>
         <tbody>
           {stock.map((s) => (
-            <tr key={s.id} style={{ borderTop: "1px solid #ddd" }}>
+            <tr key={s.id}>
               <td>{s.product_name}</td>
               <td>{s.warehouse_name}</td>
               <td align="right">{s.quantity}</td>
-              <td>{s.is_low ? <span style={{ color: "crimson" }}>Low</span> : "OK"}</td>
-              <td><button onClick={() => setSelected(s)}>Select</button></td>
+              <td>{s.is_low ? <span className="badge-low">Low</span> : <span className="badge-ok">OK</span>}</td>
+              <td><button className="btn btn-secondary" onClick={() => setSelected(s)}>Select</button></td>
             </tr>
           ))}
         </tbody>
       </table>
 
       {selected && (
-        <div style={{ border: "1px solid #ddd", padding: 16, maxWidth: 360 }}>
+        <div className="card movement-card">
           <h3>Record movement</h3>
-          <p style={{ color: "#666" }}>
+          <p className="muted-text">
             {selected.product_name} @ {selected.warehouse_name} (current: {selected.quantity})
           </p>
-          <select value={type} onChange={(e) => setType(e.target.value as "IN" | "OUT")}
-            style={{ padding: 8, marginRight: 8 }}>
-            <option value="IN">Stock In</option>
-            <option value="OUT">Stock Out</option>
-          </select>
-          <input type="number" min={1} value={qty}
-            onChange={(e) => setQty(Number(e.target.value))}
-            style={{ padding: 8, width: 80, marginRight: 8 }} />
-          <button onClick={handleSubmit}>Submit</button>
+          <div className="movement-controls">
+            <select
+              className="select movement-select"
+              value={type}
+              onChange={(e) => setType(e.target.value as "IN" | "OUT")}
+            >
+              <option value="IN">Stock In</option>
+              <option value="OUT">Stock Out</option>
+            </select>
+            <input
+              className="input movement-qty"
+              type="number"
+              min={1}
+              value={qty}
+              onChange={(e) => setQty(Number(e.target.value))}
+            />
+            <button className="btn" onClick={handleSubmit}>Submit</button>
+          </div>
           {message && (
-            <p style={{ color: message.ok ? "green" : "crimson", marginTop: 12 }}>
+            <p className={message.ok ? "status-message status-ok" : "status-message error-text"}>
               {message.text}
             </p>
           )}

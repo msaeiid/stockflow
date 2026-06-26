@@ -25,25 +25,25 @@ function Login({ onSuccess }: LoginProps) {
   }
 
   return (
-    <div style={{ maxWidth: 320, margin: "80px auto", fontFamily: "system-ui" }}>
+    <div className="card login-container">
       <h1>StockFlow</h1>
-      <p style={{ color: "#666" }}>Sign in to continue</p>
+      <p className="muted-text">Sign in to continue</p>
       <input
+        className="input login-input"
         placeholder="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        style={{ display: "block", width: "100%", padding: 8, marginBottom: 8 }}
       />
       <input
+        className="input login-input login-input-last"
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-        style={{ display: "block", width: "100%", padding: 8, marginBottom: 12 }}
       />
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", padding: 10 }}>
+      {error && <p className="error-text">{error}</p>}
+      <button className="btn login-submit" onClick={handleSubmit} disabled={loading}>
         {loading ? "Signing in…" : "Sign in"}
       </button>
     </div>

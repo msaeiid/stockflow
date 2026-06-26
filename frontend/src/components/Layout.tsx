@@ -10,18 +10,15 @@ function Layout() {
   }
 
   return (
-    <div style={{ fontFamily: "system-ui" }}>
-      <nav style={{
-        display: "flex", gap: 16, alignItems: "center",
-        padding: "12px 24px", borderBottom: "1px solid #ddd",
-      }}>
-        <strong style={{ marginRight: "auto" }}>StockFlow</strong>
+    <div>
+      <nav className="top-nav">
+        <strong className="brand">StockFlow</strong>
         <Link to="/products">Products</Link>
         <Link to="/stock">Stock</Link>
         <Link to="/dashboard">Dashboard</Link>
-        <button onClick={handleLogout}>Log out</button>
+        <button className="btn btn-secondary" onClick={handleLogout}>Log out</button>
       </nav>
-      <main style={{ padding: 24 }}>
+      <main className="page-content">
         <Outlet />
       </main>
     </div>

@@ -15,8 +15,8 @@ function ProductsPage() {
   return (
     <div>
       <h2>Products</h2>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <table cellPadding={8} style={{ borderCollapse: "collapse" }}>
+      {error && <p className="error-text">{error}</p>}
+      <table className="table">
         <thead>
           <tr>
             <th align="left">Name</th><th align="left">SKU</th>
@@ -25,7 +25,7 @@ function ProductsPage() {
         </thead>
         <tbody>
           {products.map((p) => (
-            <tr key={p.id} style={{ borderTop: "1px solid #ddd" }}>
+            <tr key={p.id}>
               <td>{p.name}</td><td>{p.sku}</td>
               <td>{p.category_name}</td><td align="right">${p.sale_price}</td>
             </tr>
