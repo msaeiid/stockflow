@@ -15,6 +15,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -185,3 +186,10 @@ CELERY_TASK_SERIALIZER = "json"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "alerts@stockflow.local"
 LOW_STOCK_ALERT_EMAIL = "manager@stockflow.local"
+
+CELERY_BEAT_SCHEDULE = {
+    "daily-stock-report": {
+        "task": "inventory.tasks.generate_daily_stock_report",
+        "schedule": crontab(hour=8, minute=0),  # Every day at 8:00 AM
+    },
+}

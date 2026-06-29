@@ -23,3 +23,35 @@ def send_low_stock_alert(stock_id):
         recipient_list=[settings.LOW_STOCK_ALERT_EMAIL],
     )
     return f"Alert sent for {stock.product.name}"
+
+
+@shared_task
+def generate_daily_stock_report():
+    from django.conf import settings
+    from django.core.mail import send_mail
+
+    from .models import Stock
+
+    low_items = [
+        s
+        for s in Stock.objects.select_related("product", "warehouse")
+        if s.quantity <= s.product.reorder_threshold
+    ]
+
+    if not low_items:
+        body = "All stock levels are healthy. No items below threshold."
+    else:
+        lines = [
+            f"- {s.product.name} @ {s.warehouse.name}: {s.quantity} "
+            f"(threshold: {s.product.reorder_threshold})"
+            for s in low_items
+        ]
+        body = "Items below reorder threshold:\n\n" + "\n".join(lines)
+
+    send_mail(
+        subject=f"Daily stock report — {len(low_items)} item(s) low",
+        message=body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[settings.LOW_STOCK_ALERT_EMAIL],
+    )
+    return f"Report sent: {len(low_items)} low item(s)"
