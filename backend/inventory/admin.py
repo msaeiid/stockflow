@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Product, Stock, StockMovement, Supplier, Warehouse
+from .models import Category, Order, OrderItem, Product, Stock, StockMovement, Supplier, Warehouse
 
 
 @admin.register(Product)
@@ -22,3 +22,15 @@ class StockMovementAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Stock)
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ("reference", "customer_name", "warehouse", "status", "created_at")
+    list_filter = ("status", "warehouse")
+    inlines = [OrderItemInline]
