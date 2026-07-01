@@ -1,21 +1,34 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import DecimalField, F, Sum
 from django.db.models.functions import Coalesce
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Category, Product, Stock, StockMovement, Supplier, Warehouse
+from .models import (
+    Category,
+    Order,
+    Product,
+    Stock,
+    StockMovement,
+    Supplier,
+    Warehouse,
+)
 from .permissions import IsManagerOrReadOnly
 from .serializers import (
     CategorySerializer,
+    OrderCreateSerializer,
+    OrderReadSerializer,
     ProductSerializer,
     StockMovementSerializer,
     StockSerializer,
     SupplierSerializer,
     WarehouseSerializer,
 )
+from .services import create_order
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -96,3 +109,36 @@ class DashboardStatsView(APIView):
                 ],
             }
         )
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.prefetch_related("items__product").all()
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return OrderCreateSerializer
+        return OrderReadSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = OrderCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        items = [
+            {"product": entry["product"], "quantity": entry["quantity"]} for entry in data["items"]
+        ]
+
+        try:
+            order = create_order(
+                warehouse=data["warehouse"],
+                customer_name=data["customer_name"],
+                items=items,
+                note=data.get("note", ""),
+            )
+
+        except DjangoValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages}) from exc
+
+        read = OrderReadSerializer(order)
+        return Response(read.data, status=status.HTTP_201_CREATED)

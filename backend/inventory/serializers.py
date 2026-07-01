@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Category, Product, Stock, StockMovement, Supplier, Warehouse
+from .models import Category, Order, OrderItem, Product, Stock, StockMovement, Supplier, Warehouse
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -76,3 +76,49 @@ class StockMovementSerializer(serializers.ModelSerializer):
         except DjangoValidationError as exc:
             raise serializers.ValidationError(exc.messages) from None
         return attrs
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    subtotal = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ["id", "product_name", "quantity", "unit_price", "subtotal"]
+        read_only_fields = ["unit_price"]
+
+
+class OrderReadSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "reference",
+            "warehouse",
+            "customer_name",
+            "status",
+            "note",
+            "total",
+            "items",
+            "created_at",
+        ]
+
+
+class OrderItemWriteSerializer(serializers.Serializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class OrderCreateSerializer(serializers.Serializer):
+    warehouse = serializers.PrimaryKeyRelatedField(queryset=Warehouse.objects.all())
+    customer_name = serializers.CharField(max_length=150)
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    items = OrderItemWriteSerializer(many=True)
+
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError("An order must contain at least one item.")
+        return value
