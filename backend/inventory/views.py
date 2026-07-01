@@ -1,6 +1,8 @@
+from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import DecimalField, F, Sum
 from django.db.models.functions import Coalesce
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, status, viewsets
 from rest_framework.exceptions import ValidationError as DRFValidationError
@@ -53,7 +55,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.select_related("category", "supplier").all()
     serializer_class = ProductSerializer
     permission_classes = [IsManagerOrReadOnly]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["category", "is_active", "supplier"]
     search_fields = ["name", "sku"]
     ordering_fields = ["name", "sale_price", "created_at"]
 
@@ -81,6 +84,11 @@ class DashboardStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cached = cache.get("dashboard_stats")
+
+        if cached is not None:
+            return Response(cached)
+
         total_products = Product.objects.filter(is_active=True).count()
 
         low_stock = [
@@ -99,16 +107,14 @@ class DashboardStatsView(APIView):
 
         top_stock = Stock.objects.select_related("product").order_by("-quantity")[:5]
 
-        return Response(
-            {
-                "total_products": total_products,
-                "low_stock_count": len(low_stock),
-                "inventory_value": inventory_value,
-                "top_products": [
-                    {"name": s.product.name, "quantity": s.quantity} for s in top_stock
-                ],
-            }
-        )
+        data = {
+            "total_products": total_products,
+            "low_stock_count": len(low_stock),
+            "inventory_value": inventory_value,
+            "top_products": [{"name": s.product.name, "quantity": s.quantity} for s in top_stock],
+        }
+        cache.set("dashboard_stats", data, timeout=30)
+        return Response()
 
 
 class OrderViewSet(viewsets.ModelViewSet):
