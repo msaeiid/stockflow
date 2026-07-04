@@ -202,11 +202,6 @@ CORS_ALLOWED_ORIGINS = [
     if o
 ]
 
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "alerts@stockflow.local"
 LOW_STOCK_ALERT_EMAIL = "manager@stockflow.local"
@@ -218,9 +213,26 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"),
+REDIS_URL = os.getenv("REDIS_URL", "")
+
+if REDIS_URL:
+    # Production/Docker with a real Redis instance
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
     }
-}
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+    CELERY_TASK_ALWAYS_EAGER = False
+else:
+    # Fallback (e.g. free-tier deploy without Redis): in-memory cache,
+    # and run Celery tasks inline so no broker is needed.
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+    CELERY_BROKER_URL = "memory://"
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
