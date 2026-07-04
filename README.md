@@ -6,37 +6,89 @@
 
 > A small-business inventory and order management system — track stock, prevent over-selling, and get low-stock alerts.
 
-StockFlow is a full-stack web application that helps small businesses manage
-products, warehouses, suppliers, and customer orders. It automatically updates
-stock levels as orders are placed, blocks orders that exceed available
-inventory, and notifies managers when an item runs low.
+StockFlow is a full-stack web application that helps small businesses manage products, warehouses, suppliers, and customer orders. It automatically updates stock levels as orders are placed, blocks orders that exceed available inventory, and notifies managers when an item runs low.
 
-**Status:** 🚧 In active development
+## 🔗 Live demo
+
+**App:** ⟨https://stockflow-eight-sigma.vercel.app/login⟩
+**API docs:** ⟨https://stockflow-api-ujk2.onrender.com/api/docs/⟩
+
+**Demo login:** `demo` / `demo12345`
+
+> ⏳ The backend runs on a free tier and may take ~30 seconds to wake up on the first request.
+
+![Dashboard](docs/dashboard.png)
 
 ## Features
 
-- [ ] Product, warehouse, supplier & customer management
-- [ ] Customer orders with automatic stock deduction
-- [ ] Validation to prevent over-selling (no negative stock)
-- [ ] Low-stock threshold alerts (email via background jobs)
-- [ ] Role-based access (admin / manager / staff)
-- [ ] Reporting dashboard with charts
-- [ ] REST API documented with Swagger
+- 📊 Reporting dashboard with key metrics and stock-level charts
+- 📦 Product, warehouse, supplier & customer management
+- 🛒 Customer orders with **atomic** multi-item stock deduction
+- 🛡️ Validation that prevents over-selling (no negative stock)
+- 🔔 Low-stock alerts via background jobs (Celery)
+- 🔐 JWT auth with role-based access (admin / manager / staff)
+- 📄 REST API documented with Swagger & ReDoc
 
-## API Documentation
-Interactive API docs available at `/api/docs/` (Swagger) and `/api/redoc/` (ReDoc).
-
-## Tech Stack
+## Tech stack
 
 **Backend:** Python, Django, Django REST Framework, PostgreSQL, Celery, Redis
-**Frontend:** React, TypeScript, Vite
-**Infrastructure:** Docker, GitHub Actions (CI/CD)
-**Testing:** pytest
+**Frontend:** React, TypeScript, Vite, React Router, Recharts
+**Infrastructure:** Docker, Docker Compose, GitHub Actions (CI)
+**Testing:** pytest · **Linting:** Ruff
 
-## Getting Started
+## Architecture
 
-_Setup instructions will be added as the project develops._
+
+
+React + TypeScript (Vite)          ← deployed on Vercel
+│  REST / JSON + JWT
+▼
+Django REST Framework + Celery      ← deployed on Render
+│  ORM
+▼
+PostgreSQL          Redis (broker / cache)
+
+
+## Key engineering decisions
+
+- **Atomic stock deduction** — orders deduct stock for all items inside a single database transaction; if any item is short, the whole order rolls back (no partial orders, no negative stock).
+- **Concurrency-safe** — stock updates use `select_for_update()` to prevent race conditions under simultaneous requests.
+- **Async by design** — low-stock alerts run as background Celery tasks, dispatched via `transaction.on_commit` so they never fire before data is committed.
+- **Graceful degradation** — Redis is optional; without it, the app falls back to an in-memory cache and runs tasks inline, so it deploys anywhere.
+- **Price snapshots** — order items store the unit price at time of sale, independent of later product price changes.
+
+## Getting started
+
+### Prerequisites
+- Docker & Docker Compose
+
+### Run locally
+```bash
+git clone https://github.com/msaeiid/stockflow.git
+cd stockflow
+cp backend/.env.example backend/.env
+docker compose up --build
+```
+- API: `http://localhost:8000`
+- API docs: `http://localhost:8000/api/docs/`
+
+### Frontend (dev)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+App runs at `http://localhost:5173`.
+
+### Seed sample data
+```bash
+docker compose exec web python manage.py seed_data
+```
+
+## Running tests
+```bash
+docker compose exec web pytest -v
+```
 
 ## License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file.
+MIT — see [LICENSE](LICENSE).
