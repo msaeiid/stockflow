@@ -11,8 +11,7 @@ StockFlow is a full-stack web application that helps small businesses manage pro
 ## 🔗 Live demo
 
 **App:** ⟨https://stockflow-eight-sigma.vercel.app/login⟩
-**API docs:** ⟨https://stockflow-api-ujk2.onrender.com/api/docs⟩
-
+**API docs:** ⟨https://stockflow-api-ujk2.onrender.com/api/docs⟩ 
 **Demo login:** `demo` / `demo12345`
 
 > ⏳ The backend runs on a free tier and may take ~30 seconds to wake up on the first request.
