@@ -48,6 +48,12 @@ jobs:
         working-directory: ./backend
         run: ruff check .
 
+      - name: Collect static files
+        working-directory: ./backend
+        run: python manage.py collectstatic --noinput
+        env:
+          SECRET_KEY: ci-secret-key
+
       - name: Run tests
         working-directory: ./backend
         run: pytest -v
