@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from .models import Category, Order, OrderItem, Product, Stock, StockMovement, Supplier, Warehouse
@@ -62,14 +63,17 @@ class StockSerializer(serializers.ModelSerializer):
         ]
 
 
+MAX_LINE_QUANTITY = 1_000_000
+
+
 class StockMovementSerializer(serializers.ModelSerializer):
+    quantity = serializers.IntegerField(min_value=1, max_value=MAX_LINE_QUANTITY)
+
     class Meta:
         model = StockMovement
         fields = ["id", "product", "warehouse", "movement_type", "quantity", "note", "created_at"]
 
     def validate(self, attrs):
-        from django.core.exceptions import ValidationError as DjangoValidationError
-
         instance = StockMovement(**attrs)
         try:
             instance.clean()
@@ -108,8 +112,8 @@ class OrderReadSerializer(serializers.ModelSerializer):
 
 
 class OrderItemWriteSerializer(serializers.Serializer):
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
-    quantity = serializers.IntegerField(min_value=1)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True))
+    quantity = serializers.IntegerField(min_value=1, max_value=MAX_LINE_QUANTITY)
 
 
 class OrderCreateSerializer(serializers.Serializer):
@@ -122,3 +126,15 @@ class OrderCreateSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("An order must contain at least one item.")
         return value
+
+
+class TopProductSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    quantity = serializers.IntegerField()
+
+
+class DashboardStatsSerializer(serializers.Serializer):
+    total_products = serializers.IntegerField()
+    low_stock_count = serializers.IntegerField()
+    inventory_value = serializers.DecimalField(max_digits=14, decimal_places=2)
+    top_products = TopProductSerializer(many=True)

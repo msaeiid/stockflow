@@ -1,0 +1,130 @@
+# Public demo at https://stockflow.demo.karbaschian.com (shared demo VM).
+# The proxy (Caddy, msaeiid/medicalequipment deploy/proxy) terminates TLS and
+# reaches this app as stockflow:8000 on the external, internal-only network
+# `demo-apps`. Whole app: 0.5 CPU, 768 MB.
+#
+#   docker network create --internal demo-apps     # once per server
+#   cp .env.demo.example .env.demo                 # then fill in the secrets
+#   docker compose -f compose.demo.yml up -d --build
+#   docker compose -f compose.demo.yml exec -T web python manage.py demo_reset --no-input
+name: demo-stockflow
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging: *logging
+
+services:
+  web:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: demo-stockflow-web:latest
+    env_file:
+      - .env.demo
+    environment:
+      # Fixed deployment settings; secrets come from .env.demo.
+      DJANGO_PRODUCTION: "True"
+      DEBUG: "False"
+      ALLOWED_HOSTS: "${DEMO_HOST:-stockflow.demo.karbaschian.com},localhost,127.0.0.1"
+      CSRF_TRUSTED_ORIGINS: "https://${DEMO_HOST:-stockflow.demo.karbaschian.com}"
+      CORS_ALLOWED_ORIGINS: ""
+      DRF_NUM_PROXIES: "1"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: stockflow
+      POSTGRES_USER: stockflow
+      REDIS_URL: ""
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+      DEMO_MODE: "True"
+      DJANGO_MIGRATE_ON_START: "True"
+      DEMO_SEED_ON_START: "True"
+    depends_on:
+      db:
+        condition: service_healthy
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      demo-apps:
+        aliases:
+          - stockflow
+      backend: {}
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=4).status == 200 else 1)"
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.35"
+          memory: 512M
+          pids: 128
+
+  db:
+    <<: *hardening
+    image: postgres:16-alpine
+    # The image's postgres user (uid 70); the entrypoint then skips its root-only steps.
+    user: postgres
+    env_file:
+      - .env.demo
+    environment:
+      POSTGRES_DB: stockflow
+      POSTGRES_USER: stockflow
+    command:
+      - postgres
+      - -c
+      - shared_buffers=48MB
+      - -c
+      - max_connections=30
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=16MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    tmpfs:
+      - /var/run/postgresql:rw,noexec,nosuid,size=1m,mode=1777
+      - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stockflow -d stockflow"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    shm_size: 64m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: 256M
+          pids: 128
+
+networks:
+  demo-apps:
+    external: true
+  backend:
+    internal: true
+
+volumes:
+  pgdata:

@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Demo deployment secrets (compose.demo.yml); .env.demo.example is committed
+.env.demo
+.env.*.local
+
+# Frontend build and local SQLite databases
+frontend/dist/
+backend/staticfiles/
+*.sqlite3

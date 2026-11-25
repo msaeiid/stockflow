@@ -1,12 +1,6 @@
-import apiClient from "./client";
+import { fetchAll } from "./client";
 import type { Product } from "../types";
 
-export async function getProducts(): Promise<Product[]> {
-  const response = await apiClient.get<Product[] | { results?: Product[] }>("/products/");
-
-  if (Array.isArray(response.data)) {
-    return response.data;
-  }
-
-  return response.data.results ?? [];
+export function getProducts(params: { is_active?: boolean } = {}): Promise<Product[]> {
+  return fetchAll<Product>("/products/", params);
 }

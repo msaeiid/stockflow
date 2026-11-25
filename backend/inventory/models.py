@@ -1,5 +1,10 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
+
+NON_NEGATIVE = [MinValueValidator(Decimal("0.00"))]
 
 
 class TimeStampedModel(models.Model):
@@ -54,8 +59,12 @@ class Product(TimeStampedModel):
     supplier = models.ForeignKey(
         Supplier, on_delete=models.SET_NULL, related_name="products", null=True, blank=True
     )
-    cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    sale_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    cost_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("0.00"), validators=NON_NEGATIVE
+    )
+    sale_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("0.00"), validators=NON_NEGATIVE
+    )
     reorder_threshold = models.PositiveIntegerField(default=10)
     is_active = models.BooleanField(default=True)
 
@@ -102,8 +111,38 @@ class StockMovement(TimeStampedModel):
             f"{self.movement_type} {self.quantity} × {self.product.name} at {self.warehouse.name}"
         )
 
+    def save(self, *args, **kwargs):
+        # A movement is a ledger entry: changing or re-saving one would apply its
+        # quantity to the stock a second time.
+        if not self._state.adding:
+            raise ValidationError("Stock movements cannot be changed once recorded.")
+        if not self.quantity or self.quantity <= 0:
+            raise ValidationError("Quantity must be greater than zero.")
+        with transaction.atomic():
+            stock, _ = Stock.objects.select_for_update().get_or_create(
+                product=self.product, warehouse=self.warehouse
+            )
+            if self.movement_type == self.MovementType.IN:
+                stock.quantity += self.quantity
+            else:
+                # Checked under the row lock, so concurrent OUT movements cannot
+                # drive the quantity below zero.
+                if self.quantity > stock.quantity:
+                    raise ValidationError(
+                        f"Not enough stock. Available: {stock.quantity}, "
+                        f"requested: {self.quantity}."
+                    )
+                stock.quantity -= self.quantity
+            stock.save()
+            super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Stock movements cannot be deleted; record a reverse movement.")
+
     def clean(self):
-        if self.quantity <= 0:
+        """Cheap validation without locks (forms, serializers). save() re-checks
+        the available quantity under a row lock."""
+        if not self.quantity or self.quantity <= 0:
             raise ValidationError("Quantity must be greater than zero.")
         if self.movement_type == self.MovementType.OUT:
             stock = Stock.objects.filter(product=self.product, warehouse=self.warehouse).first()
@@ -112,19 +151,6 @@ class StockMovement(TimeStampedModel):
                 raise ValidationError(
                     f"Not enough stock. Available: {available}, requested: {self.quantity}."
                 )
-
-    def save(self, *args, **kwargs):
-        self.clean()  # Validate before saving
-        with transaction.atomic():
-            stock, _ = Stock.objects.select_for_update().get_or_create(
-                product=self.product, warehouse=self.warehouse
-            )
-            if self.movement_type == self.MovementType.IN:
-                stock.quantity += self.quantity
-            else:
-                stock.quantity -= self.quantity
-            stock.save()
-            super().save(*args, **kwargs)
 
 
 class Order(TimeStampedModel):
@@ -146,8 +172,9 @@ class Order(TimeStampedModel):
         return f"{self.reference} ({self.customer_name})"
 
     @property
-    def total(self):
-        return sum(item.subtotal for item in self.items.all())
+    def total(self) -> Decimal:
+        # Uses the prefetched items when the queryset prefetches them.
+        return sum((item.subtotal for item in self.items.all()), Decimal("0.00"))
 
 
 class OrderItem(TimeStampedModel):

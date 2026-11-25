@@ -24,7 +24,8 @@ def create_order(*, warehouse, customer_name, items, note=""):
         status=Order.Status.CONFIRMED,
     )
 
-    for entry in items:
+    # Lock rows in a stable order so two concurrent orders cannot deadlock.
+    for entry in sorted(items, key=lambda e: e["product"].pk):
         product = entry["product"]
         quantity = entry["quantity"]
 

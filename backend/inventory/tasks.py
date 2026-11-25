@@ -1,10 +1,11 @@
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models import F
 
 
 @shared_task
-def send_low_stock_alert(stock_id):
+def send_low_stock_alert(stock_id: int) -> str:
     from .models import Stock
 
     try:
@@ -26,17 +27,14 @@ def send_low_stock_alert(stock_id):
 
 
 @shared_task
-def generate_daily_stock_report():
-    from django.conf import settings
-    from django.core.mail import send_mail
-
+def generate_daily_stock_report() -> str:
     from .models import Stock
 
-    low_items = [
-        s
-        for s in Stock.objects.select_related("product", "warehouse")
-        if s.quantity <= s.product.reorder_threshold
-    ]
+    low_items = list(
+        Stock.objects.select_related("product", "warehouse")
+        .filter(quantity__lte=F("product__reorder_threshold"))
+        .order_by("product__name", "warehouse__name")
+    )
 
     if not low_items:
         body = "All stock levels are healthy. No items below threshold."

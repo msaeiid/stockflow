@@ -16,7 +16,9 @@ function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getStats().then(setStats).catch(() => setError("Failed to load dashboard."));
+    getStats()
+      .then(setStats)
+      .catch(() => setError("Failed to load dashboard."));
   }, []);
 
   if (error) return <p className="error-text">{error}</p>;
@@ -28,7 +30,10 @@ function Dashboard() {
       <div className="stats-grid">
         <StatCard label="Active products" value={stats.total_products} />
         <StatCard label="Low stock items" value={stats.low_stock_count} />
-        <StatCard label="Inventory value" value={`$${Number(stats.inventory_value).toLocaleString()}`} />
+        <StatCard
+          label="Inventory value"
+          value={`$${Number(stats.inventory_value).toLocaleString()}`}
+        />
       </div>
 
       <h3>Top products by quantity</h3>

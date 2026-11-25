@@ -4,8 +4,12 @@ target-version = "py312"
 exclude = ["migrations"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["E", "F", "I", "UP", "B", "DJ", "SIM", "C4", "S"]
 ignore = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use plain asserts and throwaway passwords.
+"**/tests/**" = ["S101", "S105", "S106"]
