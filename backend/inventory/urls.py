@@ -4,6 +4,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     CategoryViewSet,
     DashboardStatsView,
+    DemoInfoView,
+    HealthView,
     OrderViewSet,
     ProductViewSet,
     StockMovementViewSet,
@@ -23,4 +25,6 @@ router.register("orders", OrderViewSet)
 
 urlpatterns = router.urls + [
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
+    path("health/", HealthView.as_view(), name="health"),
+    path("demo/", DemoInfoView.as_view(), name="demo-info"),
 ]
