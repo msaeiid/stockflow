@@ -22,7 +22,22 @@ def test_dashboard_stats(staff_client, stocked):
     assert data["total_products"] == 2
     assert data["low_stock_count"] == 1
     assert Decimal(data["inventory_value"]) == Decimal("64.00")  # 10*4 + 2*12
-    assert data["top_products"][0] == {"name": p1.name, "quantity": 10}
+    assert data["top_products"] == [
+        {"name": p1.name, "quantity": 10},
+        {"name": p2.name, "quantity": 2},
+    ]
+
+
+def test_dashboard_top_products_sum_all_warehouses(staff_client, stocked):
+    from .factories import WarehouseFactory
+
+    _, p1, p2 = stocked
+    StockMovement.objects.create(
+        product=p2, warehouse=WarehouseFactory(), movement_type="IN", quantity=20
+    )
+    top = staff_client.get("/api/dashboard/stats/").data["top_products"]
+    assert top[0] == {"name": p2.name, "quantity": 25}
+    assert len(top) == 2
 
 
 def test_dashboard_requires_login(anon_client):

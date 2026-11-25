@@ -117,16 +117,20 @@ class DashboardStatsView(APIView):
             )
         )["value"]
 
-        top_stock = Stock.objects.select_related("product").order_by("-quantity")[:5]
+        # Totals per product across warehouses (one bar per product).
+        top_products = (
+            Product.objects.annotate(quantity=Sum("stock_levels__quantity"))
+            .filter(quantity__gt=0)
+            .order_by("-quantity", "name")
+            .values("name", "quantity")[:5]
+        )
 
         data = DashboardStatsSerializer(
             {
                 "total_products": Product.objects.filter(is_active=True).count(),
                 "low_stock_count": low_stock_count,
                 "inventory_value": inventory_value,
-                "top_products": [
-                    {"name": s.product.name, "quantity": s.quantity} for s in top_stock
-                ],
+                "top_products": list(top_products),
             }
         ).data
         cache.set(self.cache_key, data, timeout=self.cache_timeout)
