@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getStock, createMovement } from "../api/stocks";
 import { extractError } from "../api/errors";
 import type { Stock } from "../types/index";
@@ -10,21 +10,29 @@ function StockPage() {
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
-  async function loadStock() {
-    try {
-      setStock(await getStock());
-    } catch {
-      setMessage({ text: "Failed to load stock.", ok: false });
-    }
-  }
+  const loadStock = useCallback(
+    () =>
+      getStock()
+        .then((rows) => {
+          setStock(rows);
+          // Keep the selected row in step with the reloaded quantities.
+          setSelected((current) => rows.find((row) => row.id === current?.id) ?? null);
+        })
+        .catch(() => setMessage({ text: "Failed to load stock.", ok: false })),
+    [],
+  );
 
   useEffect(() => {
     loadStock();
-  }, []);
+  }, [loadStock]);
 
   async function handleSubmit() {
     if (!selected) return;
     setMessage(null);
+    if (!Number.isInteger(qty) || qty < 1) {
+      setMessage({ text: "Quantity must be a whole number of at least 1.", ok: false });
+      return;
+    }
     try {
       await createMovement({
         product: selected.product,
@@ -45,8 +53,11 @@ function StockPage() {
       <table className="table stock-table">
         <thead>
           <tr>
-            <th align="left">Product</th><th align="left">Warehouse</th>
-            <th align="right">Quantity</th><th align="left">Status</th><th></th>
+            <th align="left">Product</th>
+            <th align="left">Warehouse</th>
+            <th align="right">Quantity</th>
+            <th align="left">Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -55,8 +66,18 @@ function StockPage() {
               <td>{s.product_name}</td>
               <td>{s.warehouse_name}</td>
               <td align="right">{s.quantity}</td>
-              <td>{s.is_low ? <span className="badge-low">Low</span> : <span className="badge-ok">OK</span>}</td>
-              <td><button className="btn btn-secondary" onClick={() => setSelected(s)}>Select</button></td>
+              <td>
+                {s.is_low ? (
+                  <span className="badge-low">Low</span>
+                ) : (
+                  <span className="badge-ok">OK</span>
+                )}
+              </td>
+              <td>
+                <button className="btn btn-secondary" onClick={() => setSelected(s)}>
+                  Select
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -84,7 +105,9 @@ function StockPage() {
               value={qty}
               onChange={(e) => setQty(Number(e.target.value))}
             />
-            <button className="btn" onClick={handleSubmit}>Submit</button>
+            <button className="btn" onClick={handleSubmit}>
+              Submit
+            </button>
           </div>
           {message && (
             <p className={message.ok ? "status-message status-ok" : "status-message error-text"}>

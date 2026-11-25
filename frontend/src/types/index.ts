@@ -23,3 +23,9 @@ export interface Stock {
   quantity: number;
   is_low: boolean;
 }
+
+export interface Warehouse {
+  id: number;
+  name: string;
+  location: string;
+}

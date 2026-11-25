@@ -1,9 +1,8 @@
-import apiClient from "./client";
+import apiClient, { fetchAll } from "./client";
 import type { Stock } from "../types";
 
-export async function getStock(): Promise<Stock[]> {
-  const response = await apiClient.get<Stock[]>("/stocks/");
-  return response.data;
+export function getStock(): Promise<Stock[]> {
+  return fetchAll<Stock>("/stocks/");
 }
 
 export interface MovementPayload {
