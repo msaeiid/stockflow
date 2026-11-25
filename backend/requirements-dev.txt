@@ -1,0 +1,9 @@
+# Development, test and lint tools (CI installs this file)
+-r requirements.txt
+pytest==9.2.0
+pytest-django==4.14.0
+pytest-cov==7.1.0
+factory-boy==3.3.3
+Faker==40.63.0
+ruff==0.17.6
+pre-commit==4.7.0
